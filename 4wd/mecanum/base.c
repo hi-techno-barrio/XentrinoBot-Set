@@ -1,3 +1,13 @@
+/*
+This code initializes the motor and encoder pins, reads the encoder values, calculates the mecanum motor commands based on the desired movement, and converts those 
+commands to individual motor speeds using the `setMotorSpeed()` function. The encoder values are printed to the serial monitor for debugging purposes.
+
+Note that the mecanum control code is not included in this example - you'll need to write that yourself based on your specific requirements. The `vx`, `vy`, 
+and `vw` variables represent the desired forward/backward velocity, left/right velocity, and rotational velocity, respectively. You'll need to use those values
+to calculate the individual motor speeds using a mecanum kinematics model.
+*/
+
+
 #include <Encoder.h>
 #define MOTOR1_PIN1 2 // Motor 1 pin 1
 #define MOTOR1_PIN2 3 // Motor 1 pin 2
