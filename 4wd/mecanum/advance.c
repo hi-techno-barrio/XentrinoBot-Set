@@ -77,7 +77,38 @@ void setup() {
 void loop() {
   // Read encoder values
   long encoder1Value = encoder1.read();
-  long encoder2Value = encoderwheel2Speed / 100));
+  long encoder2Value = encoder
+2.read();
+long encoder3Value = encoder3.read();
+long encoder4Value = encoder4.read();
+
+// Calculate mecanum control values
+double vx = 0; // Forward/backward velocity
+double vy = 0; // Left/right velocity
+double vw = 0; // Rotational velocity
+
+// TODO: Call the appropriate function(s) to set the desired values of vx, vy, and vw
+
+// Update the PID controllers with the desired and actual values
+pidVX.SetSetpoint(vx);
+pidVY.SetSetpoint(vy);
+pidVW.SetSetpoint(vw);
+pidVX.Compute();
+pidVY.Compute();
+pidVW.Compute();
+InputVX = encoder1Value + encoder2Value + encoder3Value + encoder4Value;
+InputVY = encoder1Value - encoder2Value - encoder3Value + encoder4Value;
+InputVW = encoder1Value - encoder2Value + encoder3Value - encoder4Value;
+
+// Calculate individual wheel speeds based on mecanum kinematics model and PID outputs
+double wheel1Speed = OutputVX + OutputVY + (OutputVW * (WHEEL_DIAMETER / 2));
+double wheel2Speed = OutputVX - OutputVY - (OutputVW * (WHEEL_DIAMETER / 2));
+double wheel3Speed = OutputVX - OutputVY + (OutputVW * (WHEEL_DIAMETER / 2));
+double wheel4Speed = OutputVX + OutputVY - (OutputVW * (WHEEL_DIAMETER / 2));
+
+// Convert wheel speeds to PWM values for motor driver
+int motor1Speed = (int)(255 * (wheel1Speed / 100));
+int motor2Speed = (int)(255 * (wheel2Speed / 100));
 int motor3Speed = (int)(255 * (wheel3Speed / 100));
 int motor4Speed = (int)(255 * (wheel4Speed / 100));
 
@@ -97,6 +128,14 @@ Serial.print(encoder3Value);
 Serial.print(", Encoder 4: ");
 Serial.println(encoder4Value);
 
+// Print PID outputs to serial monitor for debugging
+Serial.print("PID OutputVX: ");
+Serial.print(OutputVX);
+Serial.print(", PID OutputVY: ");
+Serial.print(OutputVY);
+Serial.print(", PID OutputVW: ");
+Serial.println(OutputVW);
+
 delay(10); // Add a small delay to avoid flooding the serial monitor
 }
 
@@ -114,4 +153,46 @@ else {
 analogWrite(pin1, 0);
 analogWrite(pin2, 0);
 }
+}
+
+// Function to move the robot forward at a specified speed
+void moveForward(int speed) {
+SetpointVX = speed;
+SetpointVY = 0;
+SetpointVW = 0;
+}
+
+// Function to move the robot backward at a specified speed
+void moveBackward(int speed) {
+SetpointVX = -speed;
+SetpointVY = 0;
+SetpointVW = 0;
+}
+
+// Function to move the robot left at a specified speed
+void moveLeft(int speed) {
+SetpointVX = 0;
+SetpointVY = speed;
+SetpointVW = 0;
+}
+
+// Function to move the robot right at a specified speed
+void moveRight(int speed) {
+SetpointVX = 0;
+SetpointVY = -speed;
+SetpointVW = 0;
+}
+
+// Function to move the robot diagonally at a specified speed
+void moveDiagonal(int vx, int vy) {
+SetpointVX = vx;
+SetpointVY = vy;
+SetpointVW = 0;
+}
+
+// Function to move the robot in any direction at a specified speed and rotational speed
+void moveDirection(int vx, int vy, int vw) {
+SetpointVX = vx;
+SetpointVY = vy;
+SetpointVW = vw;
 }
