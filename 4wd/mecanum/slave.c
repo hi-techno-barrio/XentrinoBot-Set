@@ -1,3 +1,18 @@
+
+/*
+Note that the above example code assumes that OpenCV will be sending serial commands in the following format:
+
+'F' followed by speed and acceleration values for forward movement
+'B' followed by speed and acceleration values for backward movement
+'L' followed by speed and acceleration values for left movement
+'R' followed by speed and acceleration values for right movement
+'D' followed by speed and acceleration values for diagonal movement
+'S' followed by a speed value to set the robot speed
+'A' followed by an acceleration value to set the robot acceleration
+'X' to stop the robot
+You will need to modify the OpenCV code accordingly to send these commands over serial communication.
+*/
+
 #include <Encoder.h>
 #include <PID_v1.h>
 
