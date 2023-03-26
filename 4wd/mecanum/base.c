@@ -8,24 +8,29 @@ to calculate the individual motor speeds using a mecanum kinematics model.
 */
 
 #include <Encoder.h>
-#define MOTOR1_PIN1 2 // Motor 1 pin 1
-#define MOTOR1_PIN2 3 // Motor 1 pin 2
-#define MOTOR2_PIN1 4 // Motor 2 pin 1
-#define MOTOR2_PIN2 5 // Motor 2 pin 2
-#define MOTOR3_PIN1 6 // Motor 3 pin 1
-#define MOTOR3_PIN2 7 // Motor 3 pin 2
-#define MOTOR4_PIN1 8 // Motor 4 pin 1
-#define MOTOR4_PIN2 9 // Motor 4 pin 2
 
-// Define the motor encoder pins
-#define ENCODER1A_PIN 10 // Encoder 1A pin
-#define ENCODER1B_PIN 11 // Encoder 1B pin
-#define ENCODER2A_PIN 12 // Encoder 2A pin
-#define ENCODER2B_PIN 13 // Encoder 2B pin
-#define ENCODER3A_PIN 14 // Encoder 3A pin
-#define ENCODER3B_PIN 15 // Encoder 3B pin
-#define ENCODER4A_PIN 16 // Encoder 4A pin
-#define ENCODER4B_PIN 17 // Encoder 4B pin
+// Motor pins
+#define MOTOR1_PIN1 2
+#define MOTOR1_PIN2 3
+#define MOTOR2_PIN1 4
+#define MOTOR2_PIN2 5
+#define MOTOR3_PIN1 6
+#define MOTOR3_PIN2 7
+#define MOTOR4_PIN1 8
+#define MOTOR4_PIN2 9
+
+// Encoder pins
+#define ENCODER1A_PIN 10
+#define ENCODER1B_PIN 11
+#define ENCODER2A_PIN 12
+#define ENCODER2B_PIN 13
+#define ENCODER3A_PIN 14
+#define ENCODER3B_PIN 15
+#define ENCODER4A_PIN 16
+#define ENCODER4B_PIN 17
+
+// Mecanum wheel diameter in mm
+#define WHEEL_DIAMETER 100
 
 // Define the encoder objects
 Encoder encoder1(ENCODER1A_PIN, ENCODER1B_PIN);
@@ -34,7 +39,7 @@ Encoder encoder3(ENCODER3A_PIN, ENCODER3B_PIN);
 Encoder encoder4(ENCODER4A_PIN, ENCODER4B_PIN);
 
 void setup() {
-  // Set the motor pins as outputs
+  // Set motor pins as outputs
   pinMode(MOTOR1_PIN1, OUTPUT);
   pinMode(MOTOR1_PIN2, OUTPUT);
   pinMode(MOTOR2_PIN1, OUTPUT);
@@ -43,8 +48,8 @@ void setup() {
   pinMode(MOTOR3_PIN2, OUTPUT);
   pinMode(MOTOR4_PIN1, OUTPUT);
   pinMode(MOTOR4_PIN2, OUTPUT);
-  
-  // Set the encoder pins as inputs
+
+  // Set encoder pins as inputs
   pinMode(ENCODER1A_PIN, INPUT);
   pinMode(ENCODER1B_PIN, INPUT);
   pinMode(ENCODER2A_PIN, INPUT);
@@ -53,33 +58,34 @@ void setup() {
   pinMode(ENCODER3B_PIN, INPUT);
   pinMode(ENCODER4A_PIN, INPUT);
   pinMode(ENCODER4B_PIN, INPUT);
-  
-  // Set up the serial communication
+
+  // Start serial communication
   Serial.begin(9600);
 }
 
 void loop() {
-  // Read the encoder values
+  // Read encoder values
   long encoder1Value = encoder1.read();
   long encoder2Value = encoder2.read();
   long encoder3Value = encoder3.read();
   long encoder4Value = encoder4.read();
-  
-  // Calculate the motor commands for mecanum movement
-  int vx = 0; // Forward/backward velocity
-  int vy = 0; // Left/right velocity
-  int vw = 0; // Rotational velocity
-  
-  // TODO: Add your mecanum control code here
-  
-  // Convert the mecanum commands to individual motor commands
-  int motor1Speed = vx + vy + vw;
-  int motor2Speed = vx - vy - vw;
-  int motor3Speed = vx - vy + vw;
-  int motor4Speed = vx + vy - vw;
-  
-  // Set the motor speeds
-wheel2Speed / 100));
+
+  // Calculate mecanum control values
+  double vx = 0; // Forward/backward velocity
+  double vy = 0; // Left/right velocity
+  double vw = 0; // Rotational velocity
+
+  // TODO: Set desired values of vx, vy, and vw
+
+  // Calculate individual wheel speeds based on mecanum kinematics model
+  double wheel1Speed = vx + vy + (vw * (WHEEL_DIAMETER / 2));
+  double wheel2Speed = vx - vy - (vw * (WHEEL_DIAMETER / 2));
+  double wheel3Speed = vx - vy + (vw * (WHEEL_DIAMETER / 2));
+  double wheel4Speed = vx + vy - (vw * (WHEEL_DIAMETER / 2));
+
+  // Convert wheel speeds to PWM values for motor driver
+  int motor1Speed = (int)(255 * (wheel1Speed / 100));
+  int motor2Speed = (int)(255 * (wheel2Speed / 100));
 int motor3Speed = (int)(255 * (wheel3Speed / 100));
 int motor4Speed = (int)(255 * (wheel4Speed / 100));
 
@@ -117,4 +123,3 @@ analogWrite(pin1, 0);
 analogWrite(pin2, 0);
 }
 }
-
