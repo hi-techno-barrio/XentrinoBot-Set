@@ -7,7 +7,6 @@ and `vw` variables represent the desired forward/backward velocity, left/right v
 to calculate the individual motor speeds using a mecanum kinematics model.
 */
 
-
 #include <Encoder.h>
 #define MOTOR1_PIN1 2 // Motor 1 pin 1
 #define MOTOR1_PIN2 3 // Motor 1 pin 2
@@ -80,14 +79,17 @@ void loop() {
   int motor4Speed = vx + vy - vw;
   
   // Set the motor speeds
+wheel2Speed / 100));
+int motor3Speed = (int)(255 * (wheel3Speed / 100));
+int motor4Speed = (int)(255 * (wheel4Speed / 100));
 
-  
-  setMotorSpeed(MOTOR1_PIN1, MOTOR1_PIN2, motor1Speed);
+// Set motor speeds
+setMotorSpeed(MOTOR1_PIN1, MOTOR1_PIN2, motor1Speed);
 setMotorSpeed(MOTOR2_PIN1, MOTOR2_PIN2, motor2Speed);
 setMotorSpeed(MOTOR3_PIN1, MOTOR3_PIN2, motor3Speed);
 setMotorSpeed(MOTOR4_PIN1, MOTOR4_PIN2, motor4Speed);
 
-// Print the encoder values to the serial monitor for debugging
+// Print encoder values to serial monitor for debugging
 Serial.print("Encoder 1: ");
 Serial.print(encoder1Value);
 Serial.print(", Encoder 2: ");
@@ -100,7 +102,7 @@ Serial.println(encoder4Value);
 delay(10); // Add a small delay to avoid flooding the serial monitor
 }
 
-// Function to set the speed of a motor based on the given pin values
+// Function to set motor speed based on pin values
 void setMotorSpeed(int pin1, int pin2, int speed) {
 if (speed > 0) {
 analogWrite(pin1, speed);
@@ -115,3 +117,4 @@ analogWrite(pin1, 0);
 analogWrite(pin2, 0);
 }
 }
+
