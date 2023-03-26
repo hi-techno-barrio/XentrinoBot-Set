@@ -41,16 +41,7 @@ PID pidVW(&InputVW, &OutputVW, &SetpointVW, 1, 0, 0, DIRECT);
 // Define the serial communication object
 #define SERIAL_BAUDRATE 9600
 #define SERIAL_TIMEOUT 1000
-#define SERIAL_COMMAND_SIZE 10
 #define SERIAL_COMMAND_DELIMITER ','
-#define SERIAL_COMMAND_FORWARD 'F'
-#define SERIAL_COMMAND_BACKWARD 'B'
-#define SERIAL_COMMAND_LEFT 'L'
-#define SERIAL_COMMAND_RIGHT 'R'
-#define SERIAL_COMMAND_DIAGONAL 'D'
-#define SERIAL_COMMAND_SPEED 'S'
-#define SERIAL_COMMAND_ACCELERATION 'A'
-#define SERIAL_COMMAND_STOP 'X'
 #define SERIAL_BUFFER_SIZE 128
 char serialBuffer[SERIAL_BUFFER_SIZE];
 int serialIndex = 0;
@@ -78,26 +69,26 @@ void setup() {
 
   // Set up the serial communication
   Serial.begin(SERIAL_BAUDRATE);
-  Serial.setTimeout(SERRIAL_TIMEOUT);
+  Serial.setTimeout(SERIAL_TIMEOUT);
 }
 
 void loop() {
-// Read encoder values
-long encoder1Value = encoder1.read();
-long encoder2Value = encoder2.read();
-long encoder3Value = encoder3.read();
-long encoder4Value = encoder4.read();
+  // Read encoder values
+  long encoder1Value = encoder1.read();
+  long encoder2Value = encoder2.read();
+  long encoder3Value = encoder3.read();
+  long encoder4Value = encoder4.read();
 
-// Parse serial commands
-if (Serial.available() > 0) {
-char c = Serial.read();
-if (c == SERIAL_COMMAND_DELIMITER || serialIndex == SERIAL_COMMAND_SIZE - 1) {
-serialBuffer[serialIndex] = '\0';
-parseSerialCommand(serialBuffer);
-serialIndex = 0;
+  // Parse serial commands
+  if (Serial.available() > 0) {
+    char c =Serial.read();
+if (c == SERIAL_COMMAND_DELIMITER || serialIndex == SERIAL_BUFFER_SIZE - 1) {
+  serialBuffer[serialIndex] = '\0';
+  parseSerialCommand(serialBuffer);
+  serialIndex = 0;
 } else {
-serialBuffer[serialIndex] = c;
-serialIndex++;
+  serialBuffer[serialIndex] = c;
+  serialIndex++;
 }
 }
 
@@ -153,16 +144,16 @@ delay(10); // Add a small delay to avoid flooding the serial monitor
 
 // Function to set motor speed based on pin values
 void setMotorSpeed(int pin1, int pin2, int speed) {
-if (speed
-    else if (speed < 0) {
+if (speed > 0) {
+analogWrite(pin1, speed);
+analogWrite(pin2, 0);
+} else if (speed < 0) {
 analogWrite(pin1, 0);
 analogWrite(pin2, -speed);
-}
-else {
+} else {
 analogWrite(pin1, 0);
 analogWrite(pin2, 0);
-}
-   // Function to parse serial commands and update robot movement
+}// Function to parse serial commands and update robot movement
 void parseSerialCommand(char* command) {
 char direction = command[0];
 int speed = atoi(&command[1]);
@@ -211,6 +202,80 @@ SetpointVY = 0;
 SetpointVW = 0;
 break;
 }
-} 
-    
+}
+
+// Function to move the robot forward with a given speed and acceleration
+void moveForward(int speed, int acceleration) {
+char command[SERIAL_COMMAND_SIZE];
+snprintf(command, SERIAL_COMMAND_SIZE, "%c%d,%d", SERIAL_COMMAND_FORWARD, speed, acceleration);
+Serial.println(command);
+}
+
+// Function to move the robot backward with a given speed and acceleration
+void moveBackward(int speed, int acceleration) {
+char command[SERIAL_COMMAND_SIZE];
+snprintf(command, SERIAL_COMMAND_SIZE, "%c%d,%d", SERIAL_COMMAND_BACKWARD, speed, acceleration);
+Serial.println(command);
+}
+
+// Function to move the robot left with a given speed and acceleration
+void moveLeft(int speed, int acceleration) {
+char command[SERIAL_COMMAND_SIZE];
+snprintf(command, SERIAL_COMMAND_SIZE, "%c%d,%d", SERIAL_COMMAND_LEFT, speed, acceleration);
+Serial.println(command);
+}
+
+// Function to move the robot right with a given speed and acceleration
+void moveRight(int speed, int acceleration) {
+char command[SERIAL_COMMAND_SIZE];
+snprintf(command, SERIAL_COMMAND_SIZE, "%c%d,%d", SERIAL_COMMAND_RIGHT, speed, acceleration);
+Serial.println(command);
+}
+
+// Function to move the robot diagonally with a given speed and acceleration
+void moveDiagonal(int speed, int acceleration) {
+char command[SERIAL_COMMAND_SIZE];
+snprintf(command, SERIAL_COMMAND_SIZE, "%c%d,%d", SERIAL_COMMAND_DIAGONAL, speed, acceleration);
+Serial.println(command);
+}
+
+// Function to set the robot speed with a given speed value
+void setRobotSpeed(int speed) {
+char command[SERIAL_COMMAND_SIZE];
+snprintf(command, SERIAL_COMMAND_SIZE, "%c%d", SERIAL_COMMAND_SPEED, speed);
+Serial.println(command);
+}
+
+// Function to set the robot acceleration with a given acceleration value
+void setRobotAcceleration(int acceleration) {
+char command[SERIAL_COMMAND_SIZE];
+snprintf(command, SERIAL_COMMAND_SIZE, "%c%d", SERIAL_COMMAND_ACCELERATION, acceleration);
+Serial.println(command);
+}
+
+// Function to stop the robot
+void stopRobot() {
+char command[SERIAL_COMMAND_SIZE];
+snprintf(command, SERIAL_COMMAND_SIZE, "%c", SERIAL_COMMAND_STOP);
+Serial.println(command);
+}
+
+// Example usage
+void setup() {
+// initialize serial communication
+Serial.begin(SERIAL_BAUDRATE);
+Serial.setTimeout(SERIAL_TIMEOUT);
+
+// send a command to move the robot forward with speed 50 and acceleration 10
+moveForward(50, 10);
+
+// wait for 5 seconds
+delay(5000);
+
+// send a command to stop the robot
+stopRobot();
+}
+
+void loop() {
+// do nothing
 }
