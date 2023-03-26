@@ -7,6 +7,16 @@
 
 // Serial communication
 #define SERIAL_BAUDRATE 9600
+#define SERIAL_TIMEOUT 1000
+#define SERIAL_COMMAND_SIZE 16
+#define SERIAL_COMMAND_FORWARD 'F'
+#define SERIAL_COMMAND_BACKWARD 'B'
+#define SERIAL_COMMAND_LEFT 'L'
+#define SERIAL_COMMAND_RIGHT 'R'
+#define SERIAL_COMMAND_DIAGONAL 'D'
+#define SERIAL_COMMAND_SPEED 'S'
+#define SERIAL_COMMAND_ACCELERATION 'A'
+#define SERIAL_COMMAND_STOP 'X'
 Serial serialPort;
 
 // Camera settings
@@ -25,9 +35,41 @@ Serial serialPort;
 #define ROBOT_ACCELERATION 10
 #define TURN_SPEED 50
 #define TURN_ACCELERATION 5
+#define LINE_FOLLOW_SPEED 30
+#define LINE_FOLLOW_ACCELERATION 5
+
+// PID control settings
+#define PID_SAMPLE_TIME 20 // in milliseconds
+#define PID_INPUT_MIN -CAMERA_WIDTH / 2
+#define PID_INPUT_MAX CAMERA_WIDTH / 2
+#define PID_OUTPUT_MIN -100
+#define PID_OUTPUT_MAX 100
+#define PID_KP 1.0
+#define PID_KI 0.0
+#define PID_KD 0.0
+
+// Global variables for PID control
+double Input = 0;
+double Setpoint = 0;
+double Output = 0;
+double SetpointVX = 0;
+double SetpointVY = 0;
+double SetpointVW = 0;
+PID pidVX(&Input, &Output, &SetpointVX, PID_KP, PID_KI, PID_KD, DIRECT);
+PID pidVY(&Input, &Output, &SetpointVY, PID_KP, PID_KI, PID_KD, DIRECT);
+PID pidVW(&Input, &Output, &SetpointVW, PID_KP, PID_KI, PID_KD, DIRECT);
 
 // Function prototypes
 void sendMovementCommand(char direction, int speed, int acceleration);
+void parseSerialCommand(char* command);
+void moveForward(int speed, int acceleration);
+void moveBackward(int speed, int acceleration);
+void moveLeft(int speed, int acceleration);
+void moveRight(int speed, int acceleration);
+void moveDiagonal(int speed, int acceleration);
+void setRobotSpeed(int speed);
+void setRobotAcceleration(int acceleration);
+void stopRobot();
 
 int main(int argc, char** argv) {
     // Open serial communication
@@ -42,65 +84,50 @@ int main(int argc, char** argv) {
     camera.set(cv::CAP_PROP_FRAME_WIDTH, CAMERA_WIDTH);
     camera.set(cv::CAP_PROP_FRAME_HEIGHT, CAMERA_HEIGHT);
 
-    // Main loop
-    while (true) {
-        // Capture image from camera
-        cv::Mat image;
-        camera >> image;
-        if (image.empty()) {
-            std::cerr << "Failed to capture image." << std::endl;
-            continue;
-        }
+    // Initialize PID control
+    pidVX.SetMode(AUTOMATIC);
+    pidVX.SetOutputLimits(PID_OUTPUT_MIN, PID_OUTPUT_MAX);
+    pidVY.SetMode(AUTOMATIC);
+    pidVY.SetOutputLimits(PID_OUTPUT_MIN, PID_OUTPUT_MAX);
+    pidVW.SetMode(AUTOMATIC);
+    pidVW.SetOutputLimits(PID_OUTPUT_MIN, PID_OUTPUT_MAX);
 
-        // Convert image to grayscale
-        cv::Mat grayscale;
-        cv::cvtColor(image, grayscale, cv::COLOR_BGR2GRAY);
+   // Main loop
+while (true) {
+    // Check for incoming serial commands
+    if (Serial.available()) {
+        char command[SERIAL_COMMAND_SIZE];
+        Serial.readBytesUntil('\n', command, SERIAL_COMMAND_SIZE);
+        parseSerialCommand(command);
+    }
 
-        // Apply thresholding to detect the line
-        cv::Mat thresholded;
-        cv::threshold(grayscale, thresholded, THRESHOLD_VALUE, 255, cv::THRESH_BINARY);
+    // Calculate PID outputs
+    double outputVX = pidVX.Compute();
+    double outputVY = pidVY.Compute();
+    double outputVW = pidVW.Compute();
 
-        // Apply morphological operations to remove noise
-        cv::Mat kernel = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(KERNEL_SIZE, KERNEL_SIZE));
-        cv::morphologyEx(thresholded, thresholded, cv::MORPH_OPEN, kernel);
-        cv::morphologyEx(thresholded, thresholded, cv::MORPH_CLOSE, kernel);
+    // Send movement command based on PID outputs
+    if (outputVX >= 0 && outputVY >= 0 && outputVW >= 0) {
+        sendMovementCommand('F', outputVX, outputVY, outputVW);
+    } else if (outputVX >= 0 && outputVY >= 0 && outputVW < 0) {
+        sendMovementCommand('D', outputVX, outputVY, -outputVW);
+    } else if (outputVX >= 0 && outputVY < 0 && outputVW >= 0) {
+        sendMovementCommand('E', outputVX, -outputVY, outputVW);
+    } else if (outputVX >= 0 && outputVY < 0 && outputVW < 0) {
+        sendMovementCommand('A', outputVX, -outputVY, -outputVW);
+    } else if (outputVX < 0 && outputVY >= 0 && outputVW >= 0) {
+        sendMovementCommand('G', -outputVX, outputVY, outputVW);
+    } else if (outputVX < 0 && outputVY >= 0 && outputVW < 0) {
+        sendMovementCommand('B', -outputVX, outputVY, -outputVW);
+    } else if (outputVX < 0 && outputVY < 0 && outputVW >= 0) {
+        sendMovementCommand('H', -outputVX, -outputVY, outputVW);
+    } else if (outputVX < 0 && outputVY < 0 && outputVW < 0) {
+        sendMovementCommand('C', -outputVX, -outputVY, -outputVW);
+    }
 
-        // Find contours in the thresholded image
-        std::vector<std::vector<cv::Point>> contours;
-        std::vector<cv::Vec4i> hierarchy;
-        cv::findContours(thresholded, contours, hierarchy, cv::RETR_TREE, cv::CHAIN_APPROX_SIMPLE);
-
-        // Find the largest contour
-        int largestIndex = -1;
-        double largestArea = 0;
-        for (int i = 0; i < contours.size(); i++) {
-            double area = cv::contourArea(contours[i]);
-            if (area > largestArea) {
-                largestArea = area;
-                largestIndex = i;
-            }
-        }
-
-        // Draw the line
-        if (largestIndex >= 0) {
-            cv::drawContours(image, contours, largestIndex, LINE_COLOR, LINE_THICKNESS);
-
-            // Calculate deviation from center
-            cv::Moments moments = cv::moments(contours[largestIndex]);
-            double cx = moments.m10 / moments.m00;
-            double deviation = cx - (CAMERA_WIDTH / 2);
-
-           // Send movement command based on deviation
-if (deviation < -50) {
-sendMovementCommand('L', TURN_SPEED, TURN_ACCELERATION);
-} else if (deviation > 50) {
-sendMovementCommand('R', TURN_SPEED, TURN_ACCELERATION);
-} else {
-sendMovementCommand('F', LINE_FOLLOW_SPEED, LINE_FOLLOW_ACCELERATION);
+    // Wait for a short delay to avoid flooding serial communication
+    delay(10);
 }
-
-// Wait for a short delay to avoid flooding serial communication
-delay(10);
 }
 
 // Function to send movement command over serial communication
@@ -219,20 +246,19 @@ Serial.println(command);
 
 // Example usage
 void setup() {
-// initialize serial communication
+// Initialize serial communication
 Serial.begin(SERIAL_BAUDRATE);
 Serial.setTimeout(SERIAL_TIMEOUT);
-
-// send a command to move the robot forward with speed 50 and acceleration 10
+// Send a command to move the robot forward with speed 50 and acceleration 10
 moveForward(50, 10);
 
-// wait for 5 seconds
+// Wait for 5 seconds
 delay(5000);
 
-// send a command to stop the robot
+// Send a command to stop the robot
 stopRobot();
 }
 
 void loop() {
-// do nothing
+// Do nothing
 }
