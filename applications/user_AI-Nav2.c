@@ -211,8 +211,35 @@ String generateCommands(String obstacles, int targetX, int targetY) {
   return commands;
 }
 
-
 void navigateRobot(String response) {
-  // Parse the response from ChatGPT and navigate the robot accordingly
-  // ...
+  // Parse the response from ChatGPT and extract the movement commands
+  String commands = "";
+  int startIndex = response.indexOf("[[") + 2;
+  int endIndex = response.indexOf("]]");
+  if (startIndex != -1 && endIndex != -1) {
+    commands = response.substring(startIndex, endIndex);
+  }
+
+  // Determine the movement based on the commands
+  if (commands.indexOf("Move to") != -1) {
+    // Extract the target position
+    int commaIndex = commands.indexOf(',');
+    int targetX = commands.substring(8, commaIndex).toInt();
+    int targetY = commands.substring(commaIndex+1).toInt();
+
+    // Move the robot towards the target position
+    // For example, you could use the following code to move the robot forwards:
+    // motor1.setSpeed(200);
+    // motor1.run(FORWARD);
+    // motor2.setSpeed(200);
+    // motor2.run(FORWARD);
+  }
+  else if (commands.indexOf("Avoid the obstacle") != -1) {
+    // Avoid the obstacle detected
+    // For example, you could use the following code to turn the robot left:
+    // motor1.setSpeed(200);
+    // motor1.run(BACKWARD);
+    // motor2.setSpeed(200);
+    // motor2.run(FORWARD);
+  }
 }
