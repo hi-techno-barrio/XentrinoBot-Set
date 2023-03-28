@@ -51,33 +51,48 @@ void loop() {
 
   // Send the HTTP requests to ChatGPT
   if (client.connect(server, 80)) {
-    client.print("GET ");
-    client.print(requestPath);
-    client.print("?data=");
-    client.print(commands);
-    client.print(" HTTP/1.1\r\n");
-    client.print("Host: ");
-    client.print(server);
-    client.print("\r\n");
-    client.print("Connection: close\r\n");
-    client.print("\r\n");
+    // Construct the HTTP request
+    String httpRequest = "GET " + String(requestPath) + "?data=" + String(commands) + " HTTP/1.1\r\n" +
+                         "Host: " + String(server) + "\r\n" +
+                         "Connection: close\r\n" +
+                         "\r\n";
+
+    // Send the HTTP request
+    client.print(httpRequest);
   } else {
     Serial.println("Connection failed");
   }
 
   // Wait for the response from ChatGPT
-  while (client.connected() && !client.available()) {
-    delay(1);
-  }
-
-  // Read the response from ChatGPT
   String response = "";
-  while (client.available()) {
-    response += client.readString();
+  while (client.connected()) {
+    if (client.available()) {
+      response += client.readStringUntil('\r');
+    }
+
+    if (response.endsWith("\n")) {
+      break;
+    }
+
+    delay(1);
   }
 
   // Parse the response and navigate the robot
   navigateRobot(response);
+
+  // Check for user input to update the target position
+  if (Serial.available()) {
+    String userInput = Serial.readStringUntil('\n');
+    int commaIndex = userInput.indexOf(',');
+    if (commaIndex != -1) {
+      targetX = userInput.substring(0, commaIndex).toInt();
+      targetY = userInput.substring(commaIndex+1).toInt();
+      Serial.print("New target position: ");
+      Serial.print(targetX);
+      Serial.print(",");
+      Serial.println(targetY);
+    }
+  }
 }
 
 String readLidarData() {
