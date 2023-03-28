@@ -100,11 +100,76 @@ String preprocessLidarData(String lidarData) {
 }
 
 String generateCommands(String obstacles, int targetX, int targetY) {
-  // Generate natural language commands based on obstacle and target information
-  // ...
   String commands = "";
+
+  // If there are no obstacles, move towards the target
+  if (obstacles == "") {
+    commands = "Move to " + String(targetX) + "," + String(targetY);
+  }
+  // If there are obstacles, avoid them and move towards the target
+  else {
+    // Parse the obstacle information
+    String obstacleList[10];
+    int numObstacles = 0;
+    int minDist = 1000;
+    int closestObstacle = -1;
+    int angle;
+    int dist;
+
+    int startIndex = obstacles.indexOf("360,");
+    int endIndex = obstacles.indexOf("660,");
+    obstacles = obstacles.substring(startIndex, endIndex);
+    int commaIndex = obstacles.indexOf(',');
+    obstacles = obstacles.substring(commaIndex+1);
+    
+    while (obstacles.indexOf(',') != -1) {
+      commaIndex = obstacles.indexOf(',');
+      obstacleList[numObstacles] = obstacles.substring(0, commaIndex);
+      obstacles = obstacles.substring(commaIndex+1);
+      commaIndex = obstacles.indexOf(',');
+      angle = obstacles.substring(0, commaIndex).toInt();
+      obstacles = obstacles.substring(commaIndex+1);
+      commaIndex = obstacles.indexOf(',');
+      dist = obstacles.substring(0, commaIndex).toInt();
+      obstacles = obstacles.substring(commaIndex+1);
+
+      if (dist < minDist) {
+        minDist = dist;
+        closestObstacle = numObstacles;
+      }
+
+      numObstacles++;
+      if (numObstacles >= 10) {
+        break;
+      }
+    }
+
+    // Determine the direction of the closest obstacle
+    String obstacleDirection;
+    if (closestObstacle != -1) {
+      if (angle < 90) {
+        obstacleDirection = "to the right";
+      } else if (angle > 270) {
+        obstacleDirection = "to the left";
+      } else {
+        obstacleDirection = "in front";
+      }
+    }
+
+    // Generate the avoidance commands
+    if (closestObstacle != -1) {
+      commands = "Avoid the obstacle " + obstacleDirection;
+    }
+
+    // Add the movement commands
+    if (targetX != 0 || targetY != 0) {
+      commands += " and move to " + String(targetX) + "," + String(targetY);
+    }
+  }
+
   return commands;
 }
+
 
 void navigateRobot(String response) {
   // Parse the response from ChatGPT and navigate the robot accordingly
