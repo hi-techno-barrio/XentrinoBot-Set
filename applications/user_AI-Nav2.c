@@ -93,11 +93,52 @@ String readLidarData() {
 }
 
 String preprocessLidarData(String lidarData) {
-  // Parse the Lidar data and extract obstacle information
-  // ...
   String obstacles = "";
+
+  // Extract the obstacle data from the Lidar data
+  int start = lidarData.indexOf("360,");
+  int end = lidarData.indexOf("720,");
+  String obstacleData = lidarData.substring(start, end);
+
+  // Convert the obstacle data into an array of distances
+  int distances[361];
+  int commaIndex;
+  for (int i = 0; i <= 360; i++) {
+    commaIndex = obstacleData.indexOf(',');
+    distances[i] = obstacleData.substring(0, commaIndex).toInt();
+    obstacleData = obstacleData.substring(commaIndex + 1);
+  }
+
+  // Find the closest obstacles
+  int closestRight = -1;
+  int closestLeft = -1;
+  for (int i = 0; i <= 180; i++) {
+    if (distances[i] > 0 && (closestRight == -1 || distances[i] < distances[closestRight])) {
+      closestRight = i;
+    }
+  }
+  for (int i = 180; i <= 360; i++) {
+    if (distances[i] > 0 && (closestLeft == -1 || distances[i] < distances[closestLeft])) {
+      closestLeft = i;
+    }
+  }
+
+  // Generate the obstacle string
+  if (closestRight != -1 || closestLeft != -1) {
+    if (closestRight != -1 && closestLeft != -1) {
+      obstacles = "Obstacles to the right and left";
+    }
+    else if (closestRight != -1) {
+      obstacles = "Obstacle to the right";
+    }
+    else {
+      obstacles = "Obstacle to the left";
+    }
+  }
+
   return obstacles;
 }
+
 
 String generateCommands(String obstacles, int targetX, int targetY) {
   String commands = "";
